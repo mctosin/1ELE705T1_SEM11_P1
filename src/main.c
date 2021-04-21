@@ -2,29 +2,100 @@
 #include "main.h"
 #define _USE_MATH_DEFINES
 #include "math.h"
+#include "string.h"
+
+#define Nsmall 1e-14
+
+unsigned basicOp(CplxNum* x, CplxNum y, const char* cmd, const char* outputmode) {
+  
+
+}
+
+unsigned polarinvertion(Pol* w, Pol p) {
+
+   
+}
+
+unsigned negativecartesian(Cart* x, Cart y) {
+
+
+}
 
 unsigned somacartesiana(Cart* x, Cart y) {
 
-   
+    x->a = x->a + y.a;
+    x->b = x->b + y.b;
+
+    return 0;
 }
 
 unsigned cartesian2polar(Pol* w, Cart x) {
 
-   
+    w->r = sqrt(x.a * x.a + x.b * x.b);
+    w->g = atan2(x.b, x.a);
+
+    return 0;
 }
 
 unsigned multiplypolar(Pol* w, Pol p) {
 
-    
+    // Testa para uma ou outra entrada zero
+    if (!(w->r != 0.0) || !(p.r != 0)) {
+        w->g = 0.0;
+        w->r = 0.0;
+        return 0;
+    }
+
+    // Soma os ângulos
+    w->g = w->g + p.g;
+    normalizeangle(w);
+
+    // Testa para uma ou outra entrada infinita
+    if (w->r >= INFINITY || p.r >= INFINITY) {
+        w->r = INFINITY;
+        return 2;
+    }
+
+    // Testa se as duas entradas tem números gigantescos
+    if (w->r >= _HUGE_ENUF && p.r >= _HUGE_ENUF) {
+        w->r = INFINITY;
+        return 2;
+    }
+
+    // Multiplica as normas
+    w->r = w->r * p.r;
+
+    return 0;
 }
 
+// Normaliza o ângulo no intervalo PI > ângulo >= PI
 unsigned normalizeangle(Pol* w) {
-    
+    long double angle, n_angle, frac;
+    long long int integ;
 
-    // Não modifique o código abaixo
-    // Este código deve permanecer no final da função
+    n_angle = w->g / (2 * M_PI); // Quantidade de 2PI existem em w->g
+    integ = (long long int) n_angle; // Quantidades inteiras de 2PI existem em n_angle
+    frac = (n_angle - (long double)integ); // Separa a fração de 2PI existe em n_angle
+    angle = frac * 2 * M_PI; // 0 <= |angle| < 2*PI
+    if (angle >= 0) {
+        if (angle > M_PI) {
+            w->g = -(2 * M_PI - angle);
+        }
+        else {
+            w->g = angle;
+        }
+    }
+    else {
+        angle = -angle;
+        if (angle > M_PI) {
+            w->g = (2 * M_PI - angle);
+        }
+        else {
+            w->g = -angle;
+        }
+    }
     // Marretada numérica
-    if ((M_PI - fabsl(w->g)) < 1e-14) {
+    if ((M_PI - fabsl(w->g)) < Nsmall) {
         w->g = M_PI;
     }
     return 0;
@@ -32,21 +103,229 @@ unsigned normalizeangle(Pol* w) {
 
 unsigned polar2cartesian(Cart* x, Pol w) {
 
+    if (w.r == 0.0) {
+        x->a = 0.0;
+        x->b = 0.0;
+        return 0;
+    }
 
+    if (w.r >= INFINITY) {
+        x->a = INFINITY;
+        x->b = INFINITY;
+        return 2;
+    }
+
+    if (w.g >= INFINITY) {
+        x->a = INFINITY;
+        x->b = INFINITY;
+        return 2;
+    }
+
+    // normalizeangle(&w);
+
+    x->a = w.r * cos(w.g);
+    x->b = w.r * sin(w.g);
+
+    return 0;
 }
 
 unsigned complexsum(CplxNum* c1, CplxNum c2) {
 
+    Cart c1_cart, c2_cart;
+    unsigned ret;
 
+    if (strcmp(c1->mode, cartesian) == 0) {
+        if (strcmp(c2.mode, polar) == 0) {
+            // Transforma c2 para cartesiano em c2_cart
+            ret = polar2cartesian(&c2_cart, c2.s.pol);
+            if (ret != 0) {
+                return ret;
+            }
+            // Soma c1 e c2_cart
+            ret = somacartesiana(&c1->s.cart, c2_cart);
+            if (ret != 0) {
+                return ret;
+            }
+        }
+        else {
+            // Soma c1 e c2
+            ret = somacartesiana(&c1->s.cart, c2.s.cart);
+            if (ret != 0) {
+                return ret;
+            }
+        }
+    }
+    else {
+        if (strcmp(c2.mode, polar) == 0) {
+            // transforma c1 e c2 para cartesiano em c1_cart e em c2_cart
+            ret = polar2cartesian(&c1_cart, c1->s.pol);
+            if (ret != 0) {
+                return ret;
+            }
+            ret = polar2cartesian(&c2_cart, c2.s.pol);
+            if (ret != 0) {
+                return ret;
+            }
+            // soma c1_cart e c2_cart
+            ret = somacartesiana(&c1_cart, c2_cart);
+            if (ret != 0) {
+                return ret;
+            }
+            // transforma c1_cart para polar em c1
+            ret = cartesian2polar(&c1->s.pol, c1_cart);
+            if (ret != 0) {
+                return ret;
+            }
+        }
+        else {
+            // transforma c1 para cartesiano em c1_cart
+            ret = polar2cartesian(&c1_cart, c1->s.pol);
+            if (ret != 0) {
+                return ret;
+            }
+            // soma c1_cart e c2
+            ret = somacartesiana(&c1_cart, c2.s.cart);
+            if (ret != 0) {
+                return ret;
+            }
+            // transforma c1_cart para polar em c1
+            ret = cartesian2polar(&c1->s.pol, c1_cart);
+            if (ret != 0) {
+                return ret;
+            }
+        }
+    }
+
+    return 0;
 }
 
 unsigned complexmultiply(CplxNum* c1, CplxNum c2) {
+    Pol c1_pol, c2_pol;
+    unsigned ret;
 
+    if (strcmp(c1->mode, cartesian) == 0) {
+        if (strcmp(c2.mode, polar) == 0) {
+            // transforma c1 para polar em c1_pol
+            ret = cartesian2polar(&c1_pol, c1->s.cart);
+            if (ret != 0) {
+                return 2;
+            }
+            // multiplica c1_pol por c2
+            ret = multiplypolar(&c1_pol, c2.s.pol);
+            if (ret != 0) {
+                return 2;
+            }
+            // transforma c1_pol para cartesiano em c1
+            ret = polar2cartesian(&c1->s.cart, c1_pol);
+            if (ret != 0) {
+                return 2;
+            }
+        }
+        else {
+            // transforma c1 para polar em c1_pol
+            ret = cartesian2polar(&c1_pol, c1->s.cart);
+            if (ret != 0) {
+                return 2;
+            }
+            // transforma c2 para polar em c2_pol
+            ret = cartesian2polar(&c2_pol, c2.s.cart);
+            if (ret != 0) {
+                return 2;
+            }
+            // multiplica c1_pol por c2_pol
+            ret = multiplypolar(&c1_pol, c2_pol);
+            if (ret != 0) {
+                return 2;
+            }
+            // transforma c1_pol para cartesiano em c1
+            ret = polar2cartesian(&c1->s.cart, c1_pol);
+            if (ret != 0) {
+                return 2;
+            }
+        }
+    }
+    else {
+        if (strcmp(c2.mode, polar) == 0) {
+            // multiplica c1 por c2
+            ret = multiplypolar(&c1->s.pol, c2.s.pol);
+            if (ret != 0) {
+                return 2;
+            }
+        }
+        else {
+            // transforma c2 para polar em c2_pol
+            ret = cartesian2polar(&c2_pol, c2.s.cart);
+            if (ret != 0) {
+                return 2;
+            }
+            // multiplica c1 por c2_pol
+            ret = multiplypolar(&c1->s.pol, c2_pol);
+            if (ret != 0) {
+                return 2;
+            }
+        }
+    }
 
+    return 0;
 }
 
-
 // Descrição do Assignment
+
+/*
+Este assignment é uma continuação do anterior e contém todas 
+as suas funções implementadas.
+Sua tarefa é construir a função basicOp e fazer com que seu código
+passe nos testes unitários especificados neste projeto do VS.
+Além disso, você deve implementar as funções polarinversion e 
+negativecartesian, necessárias para realizar as operações de 
+multiplicação e subtração.
+A função negativecartesian deve produzir o (-1) de um número complexo
+na base cartesiana. Sua entrada é Cart y e a saída é Cart *x. A 
+função retorna zero se tudo correu bem.
+Esta função permite realizar a subtração, utilizando-a em conjunto com
+a função complexsum.
+A função polarinversion produz o (1/n) de um número complexo n na
+base polar. Sua entrada é Polar p e a saída é Polar* w.
+Esta função permite que seja realizada a divisão, usando-a em conjunto
+com a função complexmultiply.
+A função retorna zero se tudo correu bem. Ela retorna 2 caso o
+módulo do número entrado seja menor ou igual a 1/_HUGE_ENUF. Neste 
+caso, a função devolde INFINITY como módulo de sua variável de saída.
+A função polarinversion também retorna zero se o módulo da entrada 
+for maior ou igual a _HUGE_ENUF. Neste caso, o módulo da saída será
+zero.
+A função basicOp realiza as quatro operações básica sobre seus
+operandos x e y, de forma que x = x op y, onde op pode ser uma
+operação de soma, subtração, multiplicação ou divisão.
+Os operandos x e y são números complexos cujas partes real e
+imaginária são representadas em ponto flutuante com dupla precisão
+(double). Estes operandos podem ser representados tanto em
+coordenadas cartesianas (a + bj) quanto e coordenadas polares
+(r*(exp(jg)), onde a e b representam as porções real e imaginária
+e r e g representam o módulo e o ângulo do vetor no plano s
+(imaginário).
+Os campos ClpxNum *x e y são as variáveis passadas para a função.
+O campo cmd define qual operação será realizada por basicOp. A
+função aceita apenas as strings: "add", "sub", "mul" e "dvs" para
+realizar a operação de soma, subtração, multiplicação ou divisão 
+sobre os operandos, respectivamente.
+O campo outputmode define em qual sistema de coordenadas será
+escrito o resultado da operação, desta forma pode apenas receber o
+endereço de uma das duas strings "cart" ou "pol" ou NULL. Neste
+último a função mantém a base original do operador de saída, sem
+necessidade de realizar uma conversão de base ao final.
+A função retorna zero se a operação for bem sucedida, retorna 1
+caso algum operando ou campo da função aponte para strings não
+definidas e retorna 2 caso ocorra uma divisão por zero ou outro
+erro numérico.
+Para implementar as funções você DEVE utilizar as funções básicas 
+fornecidas e implementadas, sempre que for possível. Na avaliação do 
+seu programa isso tem grande peso.
+
+*/
+
+
+// Descrição do Assignment anterior (SEM10)
 
 // Neste assigment você deve continuar o desenvolvimento das
 // funções que compõe uma pequena biblioteca que implementa

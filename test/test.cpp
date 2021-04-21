@@ -11,12 +11,7 @@ extern "C"
 }
 
 #define tolerance 1e-6
-const char* const cart = "cart";
-const char* const pol = "pol";
-const char* const add = "add";
-const char* const sub = "sub";
-const char* const mul = "mul";
-const char* const dvs = "dvs";
+
 TEST(TestCaseName, TestName) {
     EXPECT_EQ(1, 1);
     EXPECT_TRUE(true);
@@ -829,3 +824,459 @@ TEST(ComplexMultiply, S1polarS2CartesianoCheckOutputS1) {
 
     ASSERT_TRUE(ComplexNumberNear(s1_expected, s1, tolerance));
 }
+
+TEST(NegativeCartesian, ZeroInputsCheckReturnValue) {
+    Cart x;
+    Cart x_expected = { 0.0, 0.0 };
+    Cart y = { 0.0, 0.0 };
+
+    unsigned ret = negativecartesian(&x, y);
+
+    ASSERT_EQ(0, ret);
+}
+
+TEST(NegativeCartesian, ZeroInputsCheckX) {
+    Cart x;
+    Cart x_expected = { 0.0, 0.0 };
+    Cart y = { 0.0, 0.0 };
+
+    unsigned ret = negativecartesian(&x, y);
+
+    ASSERT_TRUE(CartNear(x_expected, x, tolerance));
+}
+
+
+TEST(NegativeCartesian, xRealPartZeroyRealPartNonZeroCheckX) {
+    Cart x;
+    Cart y = { 1.1, 0.0 };
+    Cart x_expected = { -1.1, 0.0 };
+
+    unsigned ret = negativecartesian(&x, y);
+
+    ASSERT_TRUE(CartNear(x_expected, x, tolerance));
+}
+
+
+TEST(NegativeCartesian, xImaginaryPartZeroyImaginaryPartNonZeroCheckX) {
+    Cart x;
+    Cart y = { 0.0, 1.7 };
+    Cart x_expected = { 0.0, -1.7 };
+
+    unsigned ret = negativecartesian(&x, y);
+
+    ASSERT_TRUE(CartNear(x_expected, x, tolerance));
+}
+
+
+TEST(NegativeCartesian, xRandomyRandomCheckX) {
+    Cart x;
+    Cart y = { 0.0001 * (double)rand(), 0.0001 * (double)rand() };
+    Cart x_expected{ -y.a, -y.b };
+
+    unsigned ret = negativecartesian(&x, y);
+
+    ASSERT_TRUE(CartNear(x_expected, x, tolerance));
+}
+
+TEST(PolarInvertion, PositiveNormPositiveAngleCheckOutput) {
+    Pol x;
+    Pol y = { 1.4, 4.32788 };
+    Pol x_expected = { 1 / 1.4, -4.32788 };
+
+    unsigned ret = polarinvertion(&x, y);
+
+    ASSERT_TRUE(PolNear(x_expected, x, tolerance));
+}
+
+TEST(PolarInvertion, NegativeNormNegativeAngleCheckOutput) {
+    Pol x;
+    Pol y = { -1.4, -4.32788 };
+    Pol x_expected = { -1 / 1.4, 4.32788 };
+
+    unsigned ret = polarinvertion(&x, y);
+
+    ASSERT_TRUE(PolNear(x_expected, x, tolerance));
+}
+
+TEST(PolarInvertion, PositiveHugeNormNegativeAngleCheckOutput) {
+    Pol x;
+    Pol y = { _HUGE_ENUF, -4.32788 };
+    Pol x_expected = { 0.0, 4.32788 };
+
+    unsigned ret = polarinvertion(&x, y);
+
+    ASSERT_TRUE(PolNear(x_expected, x, tolerance));
+}
+
+TEST(PolarInvertion, NegativeHugeNormNegativeAngleCheckOutput) {
+    Pol x;
+    Pol y = { -_HUGE_ENUF, -4.32788 };
+    Pol x_expected = { 0.0, 4.32788 };
+
+    unsigned ret = polarinvertion(&x, y);
+
+    ASSERT_TRUE(PolNear(x_expected, x, tolerance));
+}
+
+TEST(PolarInvertion, ZeroNormNegativeAngleCheckOutput) {
+    Pol x;
+    Pol y = { 0.0, -4.32788 };
+    Pol x_expected = { INFINITY, 4.32788 };
+
+    unsigned ret = polarinvertion(&x, y);
+
+    ASSERT_TRUE(PolNear(x_expected, x, tolerance));
+}
+
+TEST(PolarInvertion, PositiveNearZeroNormNegativeAngleCheckOutput) {
+    Pol x;
+    Pol y = { 1 / _HUGE_ENUF, -4.32788 };
+    Pol x_expected = { INFINITY, 4.32788 };
+
+    unsigned ret = polarinvertion(&x, y);
+
+    ASSERT_TRUE(PolNear(x_expected, x, tolerance));
+}
+
+TEST(PolarInvertion, NegativeNearZeroNormNegativeAngleCheckOutput) {
+    Pol x;
+    Pol y = { -1 / _HUGE_ENUF, -4.32788 };
+    Pol x_expected = { INFINITY, 4.32788 };
+
+    unsigned ret = polarinvertion(&x, y);
+
+    ASSERT_TRUE(PolNear(x_expected, x, tolerance));
+}
+
+TEST(PolarInvertion, ZeroNormNegativeAngleCheckReturnValue) {
+    Pol x;
+    Pol y = { 0.0, -4.32788 };
+    Pol x_expected = { INFINITY, 4.32788 };
+
+    unsigned ret = polarinvertion(&x, y);
+
+    ASSERT_EQ(2, ret);
+}
+
+TEST(PolarInvertion, PositiveNearZeroNormNegativeAngleCheckReturnValue) {
+    Pol x;
+    Pol y = { 1 / _HUGE_ENUF, -4.32788 };
+    Pol x_expected = { INFINITY, 4.32788 };
+
+    unsigned ret = polarinvertion(&x, y);
+
+    ASSERT_EQ(2, ret);
+}
+
+TEST(BasicOp, CmdInputNULLCheckReturnValue) {
+    CplxNum s1 = { {sqrt(2), sqrt(2) } , (char*)cartesian };
+    CplxNum s2 = { {-sqrt(2), sqrt(2) } , (char*)cartesian };
+    CplxNum s1_expected = { {-4.0, 0.0 } , (char*)cartesian };
+
+    //ASSERT_TRUE(ComplexNumberNear(s1_expected, s1, tolerance));
+    unsigned ret = basicOp(&s1, s2, NULL, NULL);
+
+    ASSERT_EQ(1, ret);
+}
+
+TEST(BasicOp, CmdInputInvalidCommandCheckReturnValue) {
+    CplxNum s1 = { {sqrt(2), sqrt(2) } , (char*)cartesian };
+    CplxNum s2 = { {-sqrt(2), sqrt(2) } , (char*)cartesian };
+    CplxNum s1_expected = { {-4.0, 0.0 } , (char*)cartesian };
+
+    //ASSERT_TRUE(ComplexNumberNear(s1_expected, s1, tolerance));
+    unsigned ret = basicOp(&s1, s2, polar, NULL);
+
+    ASSERT_EQ(1, ret);
+}
+
+TEST(BasicOp, ValidInputCmdNullOutputModeCheckReturnValue) {
+    CplxNum s1 = { {sqrt(2), sqrt(2) } , (char*)cartesian };
+    CplxNum s2 = { {-sqrt(2), sqrt(2) } , (char*)cartesian };
+    CplxNum s1_expected = { {-4.0, 0.0 } , (char*)cartesian };
+
+    //ASSERT_TRUE(ComplexNumberNear(s1_expected, s1, tolerance));
+    unsigned ret = basicOp(&s1, s2, add, NULL);
+
+    ASSERT_EQ(0, ret);
+}
+
+TEST(BasicOp, ValidInputCmdInvalidOutputModeCheckReturnValue) {
+    CplxNum s1 = { {sqrt(2), sqrt(2) } , (char*)cartesian };
+    CplxNum s2 = { {-sqrt(2), sqrt(2) } , (char*)cartesian };
+    CplxNum s1_expected = { {-4.0, 0.0 } , (char*)cartesian };
+
+    //ASSERT_TRUE(ComplexNumberNear(s1_expected, s1, tolerance));
+    unsigned ret = basicOp(&s1, s2, add, "batatinha");
+
+    ASSERT_EQ(1, ret);
+}
+
+TEST(BasicOP, S1polarS2CartesianoAddCmdOutputModeNULLCheckOutputS1) {
+    CplxNum s1 = { {1, M_PI } , (char*)polar };
+    CplxNum s2 = { {-1, -1 } , (char*)cartesian };
+    CplxNum s1_expected = { {2.2360680, -2.6779451 } , (char*)polar };
+
+    unsigned ret = basicOp(&s1, s2, add, NULL);
+
+    ASSERT_TRUE(ComplexNumberNear(s1_expected, s1, tolerance));
+}
+
+TEST(BasicOP, S1polarS2CartesianoAddCmdOutputModeCartesianCheckOutputS1) {
+    CplxNum s1 = { {1, M_PI } , (char*)polar };
+    CplxNum s2 = { {-1, -1 } , (char*)cartesian };
+    //CplxNum s1_expected = { {2.2360680, -2.6779451 } , (char*)polar };
+    CplxNum s1_expected = { {-2, -1 } , (char*)cartesian };
+
+    unsigned ret = basicOp(&s1, s2, add, cartesian);
+
+    ASSERT_TRUE(ComplexNumberNear(s1_expected, s1, tolerance));
+}
+
+TEST(BasicOP, S1polarS2CartesianoAddCmdOutputModeNULLCheckReturnValue) {
+    CplxNum s1 = { {1, M_PI } , (char*)polar };
+    CplxNum s2 = { {-1, -1 } , (char*)cartesian };
+    CplxNum s1_expected = { {2.2360680, -2.6779451 } , (char*)polar };
+
+    unsigned ret = basicOp(&s1, s2, add, NULL);
+
+    //ASSERT_TRUE(ComplexNumberNear(s1_expected, s1, tolerance));
+    ASSERT_EQ(0, ret);
+}
+
+TEST(BasicOP, S1polarS2CartesianoAddCmdOutputModeCartesianCheckReturnValue) {
+    CplxNum s1 = { {1, M_PI } , (char*)polar };
+    CplxNum s2 = { {-1, -1 } , (char*)cartesian };
+    //CplxNum s1_expected = { {2.2360680, -2.6779451 } , (char*)polar };
+    CplxNum s1_expected = { {-2, -1 } , (char*)cartesian };
+
+    unsigned ret = basicOp(&s1, s2, add, cartesian);
+
+    //ASSERT_TRUE(ComplexNumberNear(s1_expected, s1, tolerance));
+    ASSERT_EQ(0, ret);
+}
+
+TEST(BasicOP, S1CartesianoS2PolarAddCmdOutputModeCartesianCheckOutputS1) {
+    CplxNum s1 = { {sqrt(2), sqrt(2) } , (char*)cartesian };
+    CplxNum s2 = { {2, 3 * M_PI_4 } , (char*)polar };
+    CplxNum s1_expected = { {0.0, 2.8284271 } , (char*)cartesian };
+
+    unsigned ret = basicOp(&s1, s2, add, cartesian);
+
+    ASSERT_TRUE(ComplexNumberNear(s1_expected, s1, tolerance));
+}
+
+TEST(BasicOP, S1CartesianoS2PolarAddCmdOutputModePolarCheckOutputS1) {
+    CplxNum s1 = { {sqrt(2), sqrt(2) } , (char*)cartesian };
+    CplxNum s2 = { {2, 3 * M_PI_4 } , (char*)polar };
+    //CplxNum s1_expected = { {0.0, 2.8284271 } , (char*)cartesian };
+    CplxNum s1_expected = { {2.8284271, M_PI_2 } , (char*)polar };
+
+    unsigned ret = basicOp(&s1, s2, add, polar);
+
+    ASSERT_TRUE(ComplexNumberNear(s1_expected, s1, tolerance));
+}
+
+TEST(BasicOP, S1CartesianoS2PolarAddCmdOutputModeCartesianCheckReturnValue) {
+    CplxNum s1 = { {sqrt(2), sqrt(2) } , (char*)cartesian };
+    CplxNum s2 = { {2, 3 * M_PI_4 } , (char*)polar };
+    CplxNum s1_expected = { {0.0, 2.8284271 } , (char*)cartesian };
+
+    unsigned ret = basicOp(&s1, s2, add, cartesian);
+
+    //ASSERT_TRUE(ComplexNumberNear(s1_expected, s1, tolerance));
+    ASSERT_EQ(0, ret);
+}
+
+TEST(BasicOP, S1CartesianoS2PolarAddCmdOutputModePolarCheckReturnValue) {
+    CplxNum s1 = { {sqrt(2), sqrt(2) } , (char*)cartesian };
+    CplxNum s2 = { {2, 3 * M_PI_4 } , (char*)polar };
+    //CplxNum s1_expected = { {0.0, 2.8284271 } , (char*)cartesian };
+    CplxNum s1_expected = { {2.8284271, M_PI_2 } , (char*)polar };
+
+    unsigned ret = basicOp(&s1, s2, add, polar);
+
+    //ASSERT_TRUE(ComplexNumberNear(s1_expected, s1, tolerance));
+    ASSERT_EQ(0, ret);
+}
+
+TEST(BasicOp, S1polarInfinityAngleS2CartesianoAddCmdOutputModePolarCheckReturnValue) {
+    CplxNum s1 = { {1, INFINITY } , (char*)polar };
+    CplxNum s2 = { {-1, -1 } , (char*)cartesian };
+    CplxNum s1_expected = { {INFINITY, INFINITY } , (char*)polar };
+
+    unsigned ret = basicOp(&s1, s2, add, polar);
+
+    ASSERT_EQ(2, ret);
+}
+
+TEST(BasicOp, S1polarInfinityAngleS2CartesianoAddCmdOutputModePolarCheckOutputS1) {
+    CplxNum s1 = { {1, INFINITY } , (char*)polar };
+    CplxNum s2 = { {-1, -1 } , (char*)cartesian };
+    CplxNum s1_expected = { {1, INFINITY } , (char*)polar };
+
+    unsigned ret = basicOp(&s1, s2, add, polar);
+
+    ASSERT_TRUE(ComplexNumberNear(s1_expected, s1, tolerance));
+    //ASSERT_EQ(2, ret);
+}
+
+TEST(BasicOp, S1CartesianoS2PolarMulCmdOutputModeCartesianCheckOutputS1) {
+    CplxNum s1 = { {-sqrt(2), -sqrt(2) } , (char*)cartesian };
+    CplxNum s2 = { {2, 3 * M_PI_4 } , (char*)polar };
+    CplxNum s1_expected = { {4.0, 0.0 } , (char*)cartesian };
+
+    unsigned ret = basicOp(&s1, s2, mul, cartesian);
+
+    ASSERT_TRUE(ComplexNumberNear(s1_expected, s1, tolerance));
+}
+
+TEST(BasicOp, S1CartesianoS2PolarMulCmdOutputModeCartesianCheckReturnValue) {
+    CplxNum s1 = { {-sqrt(2), -sqrt(2) } , (char*)cartesian };
+    CplxNum s2 = { {2, 3 * M_PI_4 } , (char*)polar };
+    CplxNum s1_expected = { {4.0, 0.0 } , (char*)cartesian };
+
+    unsigned ret = basicOp(&s1, s2, mul, cartesian);
+
+    //ASSERT_TRUE(ComplexNumberNear(s1_expected, s1, tolerance));
+    ASSERT_EQ(0, ret);
+}
+
+TEST(BasicOp, S1CartesianoS2PolarMulCmdOutputModeNULLCheckOutputS1) {
+    CplxNum s1 = { {-sqrt(2), -sqrt(2) } , (char*)cartesian };
+    CplxNum s2 = { {2, 3 * M_PI_4 } , (char*)polar };
+    CplxNum s1_expected = { {4.0, 0.0 } , (char*)cartesian };
+
+    unsigned ret = basicOp(&s1, s2, mul, NULL);
+
+    ASSERT_TRUE(ComplexNumberNear(s1_expected, s1, tolerance));
+}
+
+TEST(BasicOp, S1CartesianoS2PolarMulCmdOutputModePolarCheckOutputS1) {
+    CplxNum s1 = { {-sqrt(2), -sqrt(2) } , (char*)cartesian };
+    CplxNum s2 = { {2, 3 * M_PI_4 } , (char*)polar };
+    //CplxNum s1_expected = { {4.0, 0.0 } , (char*)cartesian };
+    CplxNum s1_expected = { {4.0, 0.0 } , (char*)polar };
+
+    unsigned ret = basicOp(&s1, s2, mul, polar);
+
+    ASSERT_TRUE(ComplexNumberNear(s1_expected, s1, tolerance));
+}
+
+TEST(BasicOp, S1PolarS2PolarMulCmdOutputModeCartesianCheckOutputS1) {
+    CplxNum s1 = { {sqrt(2), M_PI_2 } , (char*)polar };
+    CplxNum s2 = { {sqrt(2), -M_PI / 6 } , (char*)polar };
+    //CplxNum s1_expected = { {2.0, M_PI / 3 } , (char*)polar };
+    CplxNum s1_expected = { {1.0, 1.732050808 } , (char*)cartesian };
+
+    unsigned ret = basicOp(&s1, s2, mul, cartesian);
+
+    ASSERT_TRUE(ComplexNumberNear(s1_expected, s1, tolerance));
+}
+
+TEST(BasicOp, S1PolarS2PolarDvsCmdOutputModePolarCheckOutputS1) {
+    CplxNum s1 = { {sqrt(2), M_PI_2 } , "polar" };
+    CplxNum s2 = { {sqrt(2), -M_PI / 6 } , (char*)polar };
+    CplxNum s1_expected = { {1.0, 2 * M_PI / 3 } , (char*)polar };
+    //CplxNum s1_expected = { {1.0, 1.732050808 } , (char*)cartesian };
+
+    unsigned ret = basicOp(&s1, s2, dvs, polar);
+
+    ASSERT_TRUE(ComplexNumberNear(s1_expected, s1, tolerance));
+}
+
+TEST(BasicOp, S1PolarS2PolarDvsCmdOutputModeCartesianCheckOutputS1) {
+    CplxNum s1 = { {sqrt(2), M_PI_2 } , (char*)polar };
+    CplxNum s2 = { {sqrt(2), -M_PI / 6 } , (char*)polar };
+    //CplxNum s1_expected = { {1.0, 2 * M_PI / 3 } , (char*)polar };
+    CplxNum s1_expected = { {-0.5, 0.8660254038 } , (char*)cartesian };
+
+    unsigned ret = basicOp(&s1, s2, dvs, "cartesian");
+
+    ASSERT_TRUE(ComplexNumberNear(s1_expected, s1, tolerance));
+}
+
+TEST(BasicOp, S1CartesianS2CartesianDvsCmdOutputModeCartesianCheckOutputS1) {
+    CplxNum s1 = { {-2.3, -8.87 } , (char*)cartesian };
+    CplxNum s2 = { {3, -6.1 } , "cartesian" };
+    //CplxNum s1_expected = { {1.3479881536, -0.7107819779 } , (char*)polar };
+    CplxNum s1_expected = { {1.0215754166, -0.8794633196 } , (char*)cartesian };
+
+    unsigned ret = basicOp(&s1, s2, dvs, "cartesian");
+
+    ASSERT_TRUE(ComplexNumberNear(s1_expected, s1, tolerance));
+}
+
+TEST(BasicOp, S1CartesianS2CartesianDvsCmdOutputModePolarCheckOutputS1) {
+    CplxNum s1 = { {-2.3, -8.87 } , (char*)cartesian };
+    CplxNum s2 = { {3, -6.1 } , (char*)cartesian };
+    CplxNum s1_expected = { {1.3479881536, -0.7107819779 } , (char*)polar };
+    //CplxNum s1_expected = { {1.0215754166, -0.8794633196 } , (char*)cartesian };
+
+    unsigned ret = basicOp(&s1, s2, dvs, "polar");
+
+    ASSERT_TRUE(ComplexNumberNear(s1_expected, s1, tolerance));
+}
+
+TEST(BasicOp, S1CartesianS2CartesianSubCmdOutputModeCartesianCheckOutputS1) {
+    CplxNum s1 = { {sqrt(2), sqrt(2) } , (char*)cartesian };
+    CplxNum s2 = { {-sqrt(2), sqrt(2) } , (char*)cartesian };
+    CplxNum s1_expected = { {2 * sqrt(2), 0.0 } , (char*)cartesian };
+
+    unsigned ret = basicOp(&s1, s2, sub, cartesian);
+
+    //ASSERT_EQ(0, ret);
+    ASSERT_TRUE(ComplexNumberNear(s1_expected, s1, tolerance));
+}
+
+TEST(BasicOp, S1CartesianS2CartesianSubCmdOutputModePolarCheckOutputS1) {
+    CplxNum s1 = { {sqrt(2), sqrt(2) } , (char*)cartesian };
+    CplxNum s2 = { {-sqrt(2), sqrt(2) } , (char*)cartesian };
+    CplxNum s1_expected = { {2 * sqrt(2), 0.0 } , (char*)polar };
+
+    unsigned ret = basicOp(&s1, s2, sub, "polar");
+
+    //ASSERT_EQ(0, ret);
+    ASSERT_TRUE(ComplexNumberNear(s1_expected, s1, tolerance));
+}
+
+TEST(BasicOP, S1CartesianoS2PolarSubCmdOutputModeCartesianCheckOutputS1) {
+    CplxNum s1 = { {sqrt(2), sqrt(2) } , (char*)cartesian };
+    CplxNum s2 = { {2, 3 * M_PI_4 } , (char*)polar };
+    CplxNum s1_expected = { {2.8284271, 0.0 } , (char*)cartesian };
+
+    unsigned ret = basicOp(&s1, s2, sub, cartesian);
+
+    ASSERT_TRUE(ComplexNumberNear(s1_expected, s1, tolerance));
+}
+
+TEST(BasicOP, S1CartesianoS2PolarSubCmdOutputModepolarCheckOutputS1) {
+    CplxNum s1 = { {sqrt(2), sqrt(2) } , (char*)cartesian };
+    CplxNum s2 = { {2, 3 * M_PI_4 } , (char*)polar };
+    CplxNum s1_expected = { {2.8284271, 0.0 } , (char*)polar };
+
+    unsigned ret = basicOp(&s1, s2, sub, polar);
+
+    ASSERT_TRUE(ComplexNumberNear(s1_expected, s1, tolerance));
+}
+
+TEST(BasicOP, S1PolarS2PolarSubCmdOutputModepolarCheckOutputS1Zero) {
+    CplxNum s1 = { {2, 3 * M_PI_4 } , (char*)polar };
+    CplxNum s2 = { {2, 3 * M_PI_4 } , (char*)polar };
+    CplxNum s1_expected = { {0.0, 0.0 } , (char*)polar };
+
+    unsigned ret = basicOp(&s1, s2, sub, polar);
+
+    ASSERT_TRUE(ComplexNumberNear(s1_expected, s1, tolerance));
+}
+
+TEST(BasicOP, S1Cartesian8_3S2PolarSubCmdOutputModepolarCheckOutputS1) {
+    CplxNum s1 = { {8, 3} , (char*)cartesian };
+    CplxNum s2 = { {2, 3 * M_PI_4 } , (char*)polar };
+    CplxNum s1_expected = { {9.5468390383, 0.1668794009 } , (char*)polar };
+
+    unsigned ret = basicOp(&s1, s2, sub, polar);
+
+    ASSERT_TRUE(ComplexNumberNear(s1_expected, s1, tolerance));
+}
+
